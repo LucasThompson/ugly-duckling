@@ -1,7 +1,15 @@
 /**
  * Created by lucast on 08/06/2017.
  */
+import {
+  AnalysisItem,
+  RootAudioItem
+} from "./analysis-item/AnalysisItem";
 
+interface Notebook {
+  root: RootAudioItem;
+  analyses: AnalysisItem[];
+}
 
 export async function createBlobFromUrl(url: string): Promise<Blob> {
   const response = await fetch(url);
