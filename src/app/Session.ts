@@ -11,7 +11,9 @@ interface Notebook {
   analyses: AnalysisItem[];
 }
 
-export async function createBlobFromUrl(url: string): Promise<Blob> {
+export type ResourceRetriever = (url: string) => Promise<Blob>;
+
+export const downloadResource: ResourceRetriever = async (url) => {
   const response = await fetch(url);
   const mimeType = response.headers.get('content-type');
   // Safari's fetch.blob implementation doesn't populate the type property
@@ -23,7 +25,7 @@ export async function createBlobFromUrl(url: string): Promise<Blob> {
     return new Blob([arrayBuffer], {type: mimeType});
   };
   return mimeType ? arrayBufferToBlob() : response.blob();
-}
+};
 
 export class PersistentStack<T> {
   private stack: T[];

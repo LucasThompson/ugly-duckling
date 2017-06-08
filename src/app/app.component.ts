@@ -16,7 +16,7 @@ import {
   LoadedRootAudioItem,
 } from './analysis-item/AnalysisItem';
 import {OnSeekHandler} from './playhead/PlayHeadHelpers';
-import {createBlobFromUrl, PersistentStack} from './Session';
+import {PersistentStack} from './Session';
 
 @Component({
   selector: 'ugly-root',
