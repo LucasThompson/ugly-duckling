@@ -17,56 +17,7 @@ import {
   RootAudioItem
 } from './analysis-item/AnalysisItem';
 import {OnSeekHandler} from './playhead/PlayHeadHelpers';
-
-class PersistentStack<T> {
-  private stack: T[];
-  private history: T[][];
-
-  constructor() {
-    this.stack = [];
-    this.history = [];
-  }
-
-  shift(): T {
-    this.history.push([...this.stack]);
-    const item = this.stack[0];
-    this.stack = this.stack.slice(1);
-    return item;
-  }
-
-  unshift(item: T): number {
-    this.history.push([...this.stack]);
-    this.stack = [item, ...this.stack];
-    return this.stack.length;
-  }
-
-  findIndex(predicate: (value: T,
-                        index: number,
-                        array: T[]) => boolean): number {
-    return this.stack.findIndex(predicate);
-  }
-
-  filter(predicate: (value: T, index: number, array: T[]) => boolean): T[] {
-    return this.stack.filter(predicate);
-  }
-
-  get(index: number): T {
-    return this.stack[index];
-  }
-
-  set(index: number, value: T) {
-    this.history.push([...this.stack]);
-    this.stack = [
-      ...this.stack.slice(0, index),
-      value,
-      ...this.stack.slice(index + 1)
-    ];
-  }
-
-  toIterable(): Iterable<T> {
-    return this.stack;
-  }
-}
+import {createBlobFromUrl, PersistentStack} from './Session';
 
 @Component({
   selector: 'ugly-root',
