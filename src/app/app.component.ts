@@ -11,8 +11,11 @@ import {Subscription} from 'rxjs/Subscription';
 import {
   AnalysisItem,
   isRootAudioItem,
-  Item, PendingAnalysisItem, PendingRootAudioItem, RootAudioItem
-} from './analysis-item/analysis-item.component';
+  Item,
+  PendingAnalysisItem,
+  PendingRootAudioItem,
+  RootAudioItem
+} from './analysis-item/AnalysisItem';
 import {OnSeekHandler} from './playhead/PlayHeadHelpers';
 
 class PersistentStack<T> {

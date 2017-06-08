@@ -14,7 +14,7 @@ import {
   getRootUri,
   isRootAudioItem,
   Item
-} from '../analysis-item/analysis-item.component';
+} from '../analysis-item/AnalysisItem';
 import {Observable} from 'rxjs/Observable';
 import {Dimension} from '../app.module';
 import {Subscription} from 'rxjs/Subscription';
