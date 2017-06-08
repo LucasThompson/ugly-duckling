@@ -10,44 +10,44 @@ export abstract class Item {
   progress?: number;
 }
 
-export interface PendingRootAudioItem extends Item {
+export interface RootAudioItem extends Item {
   uri: string;
 }
-export interface RootAudioItem extends PendingRootAudioItem {
+export interface LoadedRootAudioItem extends RootAudioItem {
   audioData: AudioBuffer;
 }
 
-export interface PendingAnalysisItem extends Item {
+export interface AnalysisItem extends Item {
   parent: RootAudioItem;
   extractorKey: string;
 }
 
-export type AnalysisItem = PendingAnalysisItem & KnownShapedFeature & {
+export type ExtractedAnalysisItem = AnalysisItem & KnownShapedFeature & {
   unit?: string
-};
+} & {parent: LoadedRootAudioItem};
 
 export function isItem(item: Item): item is Item {
   return item.id != null && item.hasSharedTimeline != null;
 }
 
-export function isPendingRootAudioItem(item: Item): item is PendingRootAudioItem {
+export function isPendingRootAudioItem(item: Item): item is RootAudioItem {
   return isItem(item) && typeof (item as RootAudioItem).uri === 'string';
 }
 
-export function isRootAudioItem(item: Item): item is RootAudioItem {
+export function isLoadedRootAudioItem(item: Item): item is LoadedRootAudioItem {
   return item && isPendingRootAudioItem(item) &&
-    (item as RootAudioItem).audioData instanceof AudioBuffer;
+    (item as LoadedRootAudioItem).audioData instanceof AudioBuffer;
 }
 
 export function isPendingAnalysisItem(item: Item): item is AnalysisItem {
-  const downcast = (item as AnalysisItem);
-  return isRootAudioItem(downcast.parent)
+  const downcast = (item as ExtractedAnalysisItem);
+  return isLoadedRootAudioItem(downcast.parent)
     && typeof downcast.extractorKey === 'string';
 }
 
-export function isAnalysisItem(item: Item): item is AnalysisItem {
-  const downcast = (item as AnalysisItem);
-  return isPendingAnalysisItem(item) &&
+export function isExtractedAnalysisItem(it: Item): it is ExtractedAnalysisItem {
+  const downcast = (it as ExtractedAnalysisItem);
+  return isPendingAnalysisItem(it) &&
     downcast.shape != null &&
     downcast.collected != null;
 }

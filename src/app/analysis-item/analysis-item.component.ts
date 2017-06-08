@@ -21,8 +21,8 @@ import {
 import {
   Item,
   AnalysisItem,
-  isAnalysisItem,
-  isRootAudioItem,
+  isExtractedAnalysisItem,
+  isLoadedRootAudioItem,
   isPendingAnalysisItem,
   isPendingRootAudioItem
 } from './AnalysisItem';
@@ -78,25 +78,26 @@ export class AnalysisItemComponent implements OnInit, OnDestroy {
   }
 
   isAudioItem(): boolean {
-    return this.item && isRootAudioItem(this.item);
+    return this.item && isLoadedRootAudioItem(this.item);
   }
 
   isPending(): boolean {
     return this.item &&
-      !isRootAudioItem(this.item) && !isAnalysisItem(this.item) &&
+      !isLoadedRootAudioItem(this.item) &&
+      !isExtractedAnalysisItem(this.item) &&
       (isPendingAnalysisItem(this.item) || isPendingRootAudioItem(this.item));
   }
 
   getFeatureShape(): HigherLevelFeatureShape | null {
     return !isPendingRootAudioItem(this.item) &&
-    isAnalysisItem(this.item) ? this.item.shape : null;
+    isExtractedAnalysisItem(this.item) ? this.item.shape : null;
   }
 
   getDuration(): number | null {
-    if (isRootAudioItem(this.item)) {
+    if (isLoadedRootAudioItem(this.item)) {
       return this.item.audioData.duration;
     }
-    if (isAnalysisItem(this.item)) {
+    if (isExtractedAnalysisItem(this.item)) {
       return this.item.parent.audioData.duration;
     }
   }
@@ -132,7 +133,7 @@ export class AnalysisItemComponent implements OnInit, OnDestroy {
       this.isAudioItem() ||
       !this.item.hasSharedTimeline ||
       (
-        isAnalysisItem(this.item) &&
+        isExtractedAnalysisItem(this.item) &&
         !(this.item as AnalysisItem).parent.hasSharedTimeline
       )
     ) ? createPagingTask() : () => {};

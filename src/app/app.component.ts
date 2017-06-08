@@ -10,11 +10,10 @@ import {MdIconRegistry} from '@angular/material';
 import {Subscription} from 'rxjs/Subscription';
 import {
   AnalysisItem,
-  isRootAudioItem,
+  RootAudioItem,
+  isLoadedRootAudioItem,
   Item,
-  PendingAnalysisItem,
-  PendingRootAudioItem,
-  RootAudioItem
+  LoadedRootAudioItem,
 } from './analysis-item/AnalysisItem';
 import {OnSeekHandler} from './playhead/PlayHeadHelpers';
 import {createBlobFromUrl, PersistentStack} from './Session';
@@ -32,7 +31,7 @@ export class AppComponent implements OnDestroy {
   private analyses: PersistentStack<Item>; // TODO some immutable state container describing entire session
   private nRecordings: number; // TODO user control for naming a recording
   private countingId: number; // TODO improve uniquely identifying items
-  private rootAudioItem: RootAudioItem;
+  private rootAudioItem: LoadedRootAudioItem;
   private onSeek: OnSeekHandler;
 
   constructor(private audioService: AudioPlayerService,
@@ -63,7 +62,8 @@ export class AppComponent implements OnDestroy {
           if (this.audioBuffer) {
             this.canExtract = true;
             const currentRootIndex = this.analyses.findIndex(val => {
-              return isRootAudioItem(val) && val.uri === this.rootAudioItem.uri;
+              return isLoadedRootAudioItem(val) &&
+                val.uri === this.rootAudioItem.uri;
             });
             if (currentRootIndex !== -1) {
               this.analyses.set(
@@ -119,8 +119,8 @@ export class AppComponent implements OnDestroy {
       title: title,
       description: new Date().toLocaleString(),
       id: `${++this.countingId}`
-    } as PendingRootAudioItem;
-    this.rootAudioItem = pending as RootAudioItem; // TODO this is silly
+    } as RootAudioItem;
+    this.rootAudioItem = pending as LoadedRootAudioItem; // TODO this is silly
 
     // TODO re-ordering of items for display
     // , one alternative is a Angular Pipe / Filter for use in the Template
@@ -134,7 +134,7 @@ export class AppComponent implements OnDestroy {
 
     this.canExtract = false;
 
-    const placeholderCard: PendingAnalysisItem = {
+    const placeholderCard: AnalysisItem = {
       parent: this.rootAudioItem,
       hasSharedTimeline: true,
       extractorKey: outputInfo.combinedKey,
