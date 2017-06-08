@@ -174,8 +174,22 @@ export class AnalysisItemComponent implements OnInit, OnDestroy {
       });
     };
     // only add a pager to audio items, it can drive the feature items
-    const remover = this.timeline && this.isAudioItem() ?
-      createPagingTask() : () => {};
+    // or, if the item has an independent timeline, it will need to drive itself
+    // or, if an analysis item's parent has an independent timeline, ^^
+    // this is messy, probably non exhaustive, and not efficient
+    // for example, two analysis items with a parent who for some meaningless
+    // reason does not have a shared timeline, could share a timeline with
+    // each other... which implies the paging mapper should be provided
+    // from above, because that is where those details are known
+    const remover = this.timeline && this.item &&
+    (
+      this.isAudioItem() ||
+      !this.item.hasSharedTimeline ||
+      (
+        isAnalysisItem(this.item) &&
+        !(this.item as AnalysisItem).parent.hasSharedTimeline
+      )
+    ) ? createPagingTask() : () => {};
     this.removeAnimation = () => {
       remover();
       this.removeAnimation = () => {};

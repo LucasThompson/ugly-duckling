@@ -40,13 +40,15 @@ export class NotebookFeedComponent implements OnDestroy {
   private resizeSubscription: Subscription;
   private width: number;
   private lastWidth: number;
-  private timelines: Map<string, Timeline>;
+  private sharedTimelines: Map<string, Timeline>;
+  private independentTimelines: Map<string, Timeline>;
 
   constructor(
     private ref: ChangeDetectorRef,
     @Inject('DimensionObservable') private onResize: Observable<Dimension>
   ) {
-    this.timelines = new Map();
+    this.sharedTimelines = new Map();
+    this.independentTimelines = new Map();
     this.onResize.subscribe(dim => {
       this.lastWidth = this.width;
       this.width = dim.width;
@@ -65,18 +67,29 @@ export class NotebookFeedComponent implements OnDestroy {
     requestAnimationFrame(triggerChangeDetectionOnResize);
   }
 
-  getOrCreateTimeline(item: Item): Timeline | void {
-    if (!item.hasSharedTimeline) {
-      return;
+  getOrCreateTimeline(item: Item): Timeline {
+    const getOrCreate = <K, V>(map: Map<K, V>, key: K, factory: () => V): V => {
+      if (map.has(key)) {
+        return map.get(key);
+      } else {
+        const val = factory();
+        map.set(key, val);
+        return val;
+      }
+    };
+    const createTimeline = () => new Waves.core.Timeline();
+    if (item.hasSharedTimeline) {
+      return getOrCreate(
+        this.sharedTimelines,
+        getRootUri(item),
+        createTimeline
+      );
     }
-    const uri = getRootUri(item);
-    if (this.timelines.has(uri)) {
-      return this.timelines.get(uri);
-    } else {
-      const timeline = new Waves.core.Timeline();
-      this.timelines.set(uri, timeline);
-      return timeline;
-    }
+    return getOrCreate(
+      this.independentTimelines,
+      item.id,
+      createTimeline
+    );
   }
 
   isAudioItem(item: Item): boolean {
