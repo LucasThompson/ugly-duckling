@@ -2,6 +2,7 @@
  * Created by lucast on 08/06/2017.
  */
 import {KnownShapedFeature} from '../visualisations/FeatureUtilities';
+import {SimpleRequest} from 'piper/HigherLevelUtilities';
 export abstract class Item {
   id: string;
   hasSharedTimeline: boolean;
@@ -62,4 +63,18 @@ export function getRootUri(item: Item): string {
     return item.parent.uri;
   }
   throw new Error('Invalid item: No URI property set.');
+}
+
+export function createExtractionRequest(item: AnalysisItem): SimpleRequest {
+  return {
+    audioData: [...Array(item.parent.audioData.numberOfChannels).keys()]
+      .map(i => item.parent.audioData.getChannelData(i)),
+    audioFormat: {
+      sampleRate: item.parent.audioData.sampleRate,
+      channelCount: item.parent.audioData.numberOfChannels,
+      length: item.parent.audioData.length
+    },
+    key: item.extractorKey,
+    outputId: item.outputId
+  };
 }

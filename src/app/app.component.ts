@@ -14,6 +14,7 @@ import {
   isLoadedRootAudioItem,
   Item,
   LoadedRootAudioItem,
+  createExtractionRequest,
 } from './analysis-item/AnalysisItem';
 import {OnSeekHandler} from './playhead/PlayHeadHelpers';
 import {PersistentStack} from './Session';
@@ -146,17 +147,9 @@ export class AppComponent implements OnDestroy {
     };
     this.analyses.unshift(placeholderCard);
 
-    this.featureService.extract(`${this.countingId}`, {
-      audioData: [...Array(this.audioBuffer.numberOfChannels).keys()]
-        .map(i => this.audioBuffer.getChannelData(i)),
-      audioFormat: {
-        sampleRate: this.audioBuffer.sampleRate,
-        channelCount: this.audioBuffer.numberOfChannels,
-        length: this.audioBuffer.length
-      },
-      key: outputInfo.extractorKey,
-      outputId: outputInfo.outputId
-    }).then(result => { // TODO subscribe to the extraction service instead
+    this.featureService.extract(`${this.countingId}`, createExtractionRequest(
+      placeholderCard
+    )).then(result => { // TODO subscribe to the extraction service instead
       const i = this.analyses.findIndex(val => val.id === result.id);
       this.canExtract = true;
       if (i !== -1) {
