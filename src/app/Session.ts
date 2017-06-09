@@ -6,13 +6,41 @@ import {
   RootAudioItem
 } from './analysis-item/AnalysisItem';
 
+export const exampleSession: SerialisedNotebook = {
+  root: {
+    id: '1',
+    hasSharedTimeline: true,
+    title: 'Drum Loop',
+    description: 'Remotely hosted audio file',
+    uri: 'https://piper-audio.github.io/waves-ui-piper/examples/assets/drum-loop.wav'
+  },
+  analyses: [
+    {
+      id: '2',
+      hasSharedTimeline: true,
+      extractorKey: 'vamp-example-plugins:amplitudefollower',
+      outputId: 'amplitude',
+      title: 'Amplitude',
+      description: 'amplitude'
+    },
+    {
+      id: '3',
+      hasSharedTimeline: true,
+      extractorKey: 'vamp-example-plugins:powerspectrum',
+      outputId: 'powerspectrum',
+      title: 'Simple Power Spectrum',
+      description: 'powerspectrum'
+    },
+
+  ]
+};
+
 export interface SerialisedAnalysisItem extends Item {
-  parent: RootAudioItem;
   extractorKey: string;
   outputId: string;
 }
 
-interface SerialisedNotebook {
+export interface SerialisedNotebook {
   root: RootAudioItem;
   analyses: SerialisedAnalysisItem[];
 }
