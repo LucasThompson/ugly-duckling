@@ -3,12 +3,20 @@
  */
 import {
   AnalysisItem,
+  Item,
   RootAudioItem
-} from "./analysis-item/AnalysisItem";
+} from './analysis-item/AnalysisItem';
+import {SimpleRequest} from 'piper/HigherLevelUtilities';
 
-interface Notebook {
+export interface SerialisedAnalysisItem extends Item {
+  parent: RootAudioItem;
+  extractorKey: string;
+  outputId: string;
+}
+
+interface SerialisedNotebook {
   root: RootAudioItem;
-  analyses: AnalysisItem[];
+  analyses: SerialisedAnalysisItem[];
 }
 
 export type ResourceRetriever = (url: string) => Promise<Blob>;
@@ -26,6 +34,20 @@ export const downloadResource: ResourceRetriever = async (url) => {
   };
   return mimeType ? arrayBufferToBlob() : response.blob();
 };
+
+function createExtractionRequest(item: AnalysisItem): SimpleRequest {
+  return {
+    audioData: [...Array(item.parent.audioData.numberOfChannels).keys()]
+      .map(i => item.parent.audioData.getChannelData(i)),
+    audioFormat: {
+      sampleRate: item.parent.audioData.sampleRate,
+      channelCount: item.parent.audioData.numberOfChannels,
+      length: item.parent.audioData.length
+    },
+    key: item.extractorKey,
+    outputId: item.outputId
+  };
+}
 
 export class PersistentStack<T> {
   private stack: T[];

@@ -18,14 +18,14 @@ export interface LoadedRootAudioItem extends RootAudioItem {
 }
 
 export interface AnalysisItem extends Item {
-  parent: RootAudioItem;
+  parent: LoadedRootAudioItem;
   extractorKey: string;
   outputId: string;
 }
 
 export type ExtractedAnalysisItem = AnalysisItem & KnownShapedFeature & {
   unit?: string
-} & {parent: LoadedRootAudioItem};
+};
 
 export function isItem(item: Item): item is Item {
   return item.id != null && item.hasSharedTimeline != null;
