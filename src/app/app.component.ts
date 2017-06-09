@@ -1,9 +1,12 @@
-import {Component, OnDestroy} from '@angular/core';
+import {AfterViewInit, Component, OnDestroy} from '@angular/core';
 import {
   AudioPlayerService,
   AudioResourceError, AudioResource
 } from './services/audio-player/audio-player.service';
-import {FeatureExtractionService} from './services/feature-extraction/feature-extraction.service';
+import {
+  ExtractionResult,
+  FeatureExtractionService
+} from './services/feature-extraction/feature-extraction.service';
 import {ExtractorOutputInfo} from './feature-extraction-menu/feature-extraction-menu.component';
 import {DomSanitizer} from '@angular/platform-browser';
 import {MdIconRegistry} from '@angular/material';
@@ -17,14 +20,22 @@ import {
   createExtractionRequest,
 } from './analysis-item/AnalysisItem';
 import {OnSeekHandler} from './playhead/PlayHeadHelpers';
-import {PersistentStack} from './Session';
+import {
+  downloadResource,
+  PersistentStack,
+  SerialisedAnalysisItem,
+  SerialisedNotebook,
+  exampleSession
+} from './Session';
+import {Observable} from 'rxjs/Observable';
+import {RequestId} from 'piper/protocols/WebWorkerProtocol';
 
 @Component({
   selector: 'ugly-root',
   templateUrl: './app.component.html',
   styleUrls: ['./app.component.css']
 })
-export class AppComponent implements OnDestroy {
+export class AppComponent implements OnDestroy, AfterViewInit {
   audioBuffer: AudioBuffer; // TODO consider revising
   canExtract: boolean;
   private onAudioDataSubscription: Subscription;
@@ -99,7 +110,60 @@ export class AppComponent implements OnDestroy {
     );
   }
 
-  onFileOpened(file: File | Blob) {
+  ngAfterViewInit(): void {
+    const triggerLoadAudio: (resource: Blob) => Observable<LoadedRootAudioItem>
+      = (resource) => Observable.create(obs => {
+      obs.next(this.onFileOpened(resource));
+    });
+
+    const setupPlaceholder = (item: SerialisedAnalysisItem,
+                              rootAudio: LoadedRootAudioItem): AnalysisItem => {
+      const placeholder: AnalysisItem = {
+        parent: rootAudio,
+        hasSharedTimeline: true,
+        extractorKey: item.extractorKey,
+        outputId: item.outputId,
+        title: item.title,
+        description: item.description,
+        id: `${++this.countingId}`, // take it from the item and update countindId?
+        progress: 0
+      };
+      this.analyses.unshift(placeholder);
+      return placeholder;
+    };
+
+    const hydrateSession = (session: SerialisedNotebook) => {
+      const downloadAndTrigger = Observable.fromPromise(
+        downloadResource(session.root.uri)
+      ).mergeMap(triggerLoadAudio);
+      const audioLoaded =
+        (x: LoadedRootAudioItem) => this.audioService.audioLoaded$
+          .filter(response => x.uri === (response as AudioResource).url)
+          .map<AudioResource, LoadedRootAudioItem>(() => x);
+
+      const sequentiallyAnalyse = (rootAudioItem: LoadedRootAudioItem) => {
+        return Observable.fromPromise((async () => {
+          for (const analysis of session.analyses) {
+            await this.sendExtractionRequest(setupPlaceholder(
+              analysis,
+              rootAudioItem)
+            );
+          }
+        })());
+      };
+
+      return downloadAndTrigger
+        .mergeMap(audioLoaded)
+        .mergeMap(sequentiallyAnalyse);
+    };
+    hydrateSession(exampleSession).subscribe(
+      () => console.warn('done'),
+      console.error,
+      () => console.warn('complete')
+    );
+  }
+
+  onFileOpened(file: File | Blob): LoadedRootAudioItem | null {
     this.canExtract = false;
     const url = this.audioService.loadAudio(file);
     // TODO is it safe to assume it is a recording?
@@ -126,9 +190,10 @@ export class AppComponent implements OnDestroy {
     // TODO re-ordering of items for display
     // , one alternative is a Angular Pipe / Filter for use in the Template
     this.analyses.unshift(pending);
+    return this.rootAudioItem;
   }
 
-  extractFeatures(outputInfo: ExtractorOutputInfo): void {
+  extractFeatures(outputInfo: ExtractorOutputInfo): RequestId | null {
     if (!this.canExtract || !outputInfo) {
       return;
     }
@@ -146,10 +211,18 @@ export class AppComponent implements OnDestroy {
       progress: 0
     };
     this.analyses.unshift(placeholderCard);
+    this.sendExtractionRequest(placeholderCard);
+    return placeholderCard.id;
+  }
 
-    this.featureService.extract(`${this.countingId}`, createExtractionRequest(
-      placeholderCard
-    )).then(result => { // TODO subscribe to the extraction service instead
+  ngOnDestroy(): void {
+    this.onAudioDataSubscription.unsubscribe();
+    this.onProgressUpdated.unsubscribe();
+  }
+
+  private sendExtractionRequest(analysis: AnalysisItem): Promise<void> {
+    const findAndUpdateItem = (result: ExtractionResult): void => {
+      // TODO subscribe to the extraction service instead
       const i = this.analyses.findIndex(val => val.id === result.id);
       this.canExtract = true;
       if (i !== -1) {
@@ -163,15 +236,15 @@ export class AppComponent implements OnDestroy {
           )
         );
       }  // TODO else remove the item?
-    }).catch(err => {
-      this.canExtract = true;
-      this.analyses.shift();
-      console.error(`Error whilst extracting: ${err}`);
-    });
-  }
-
-  ngOnDestroy(): void {
-    this.onAudioDataSubscription.unsubscribe();
-    this.onProgressUpdated.unsubscribe();
+    };
+    return this.featureService.extract(
+      analysis.id,
+      createExtractionRequest(analysis))
+      .then(findAndUpdateItem)
+      .catch(err => {
+        this.canExtract = true;
+        this.analyses.shift();
+        console.error(`Error whilst extracting: ${err}`);
+      });
   }
 }
