@@ -137,7 +137,8 @@ export class AppComponent implements OnDestroy {
     const placeholderCard: AnalysisItem = {
       parent: this.rootAudioItem,
       hasSharedTimeline: true,
-      extractorKey: outputInfo.combinedKey,
+      extractorKey: outputInfo.extractorKey,
+      outputId: outputInfo.outputId,
       title: outputInfo.name,
       description: outputInfo.outputId,
       id: `${++this.countingId}`,

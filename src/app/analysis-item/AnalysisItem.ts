@@ -20,6 +20,7 @@ export interface LoadedRootAudioItem extends RootAudioItem {
 export interface AnalysisItem extends Item {
   parent: RootAudioItem;
   extractorKey: string;
+  outputId: string;
 }
 
 export type ExtractedAnalysisItem = AnalysisItem & KnownShapedFeature & {
