@@ -30,6 +30,12 @@ import {
 import {Observable} from 'rxjs/Observable';
 import {RequestId} from 'piper/protocols/WebWorkerProtocol';
 
+
+interface FileInfo {
+  title: string;
+  description: string
+}
+
 @Component({
   selector: 'ugly-root',
   templateUrl: './app.component.html',
@@ -111,10 +117,11 @@ export class AppComponent implements OnDestroy, AfterViewInit {
   }
 
   ngAfterViewInit(): void {
-    const triggerLoadAudio: (resource: Blob) => Observable<LoadedRootAudioItem>
-      = (resource) => Observable.create(obs => {
-      obs.next(this.onFileOpened(resource));
-    });
+    const triggerLoadAudio =
+      (resource: Blob, info: FileInfo): Observable<LoadedRootAudioItem> =>
+        Observable.create(obs => {
+          obs.next(this.onFileOpened(resource, info));
+        });
 
     const setupPlaceholder = (item: SerialisedAnalysisItem,
                               rootAudio: LoadedRootAudioItem): AnalysisItem => {
@@ -135,7 +142,10 @@ export class AppComponent implements OnDestroy, AfterViewInit {
     const hydrateSession = (session: SerialisedNotebook) => {
       const downloadAndTrigger = Observable.fromPromise(
         downloadResource(session.root.uri)
-      ).mergeMap(triggerLoadAudio);
+      ).mergeMap(blob => triggerLoadAudio(blob, {
+        title: session.root.title,
+        description: session.root.description
+      }));
       const audioLoaded =
         (x: LoadedRootAudioItem) => this.audioService.audioLoaded$
           .filter(response => x.uri === (response as AudioResource).url)
@@ -163,7 +173,7 @@ export class AppComponent implements OnDestroy, AfterViewInit {
     );
   }
 
-  onFileOpened(file: File | Blob): LoadedRootAudioItem | null {
+  onFileOpened(file: File | Blob, info?: FileInfo): LoadedRootAudioItem | null {
     this.canExtract = false;
     const url = this.audioService.loadAudio(file);
     // TODO is it safe to assume it is a recording?
@@ -181,8 +191,8 @@ export class AppComponent implements OnDestroy, AfterViewInit {
     const pending = {
       uri: url,
       hasSharedTimeline: true,
-      title: title,
-      description: new Date().toLocaleString(),
+      title: info ? info.title : title,
+      description: info ? info.description : new Date().toLocaleString(),
       id: `${++this.countingId}`
     } as RootAudioItem;
     this.rootAudioItem = pending as LoadedRootAudioItem; // TODO this is silly
